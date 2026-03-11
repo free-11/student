@@ -45,7 +45,7 @@
             <button @click="openEditModal(student)" style="margin-right: 5px; padding: 4px 8px; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; border-radius: 4px; font-size: 12px;">
               编辑
             </button>
-            <button @click="deleteStudent(student.studentId)" style="padding: 4px 8px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; color: white; border-radius: 4px; font-size: 12px;">
+            <button @click="showDeleteConfirm(student.studentId)" style="padding: 4px 8px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; color: white; border-radius: 4px; font-size: 12px;">
               删除
             </button>
           </td>
@@ -117,6 +117,18 @@
         </form>
       </div>
     </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 1000; display: none;">
+      <div style="background-color: white; padding: 20px; border-radius: 8px; width: 400px;">
+        <h2>确认删除</h2>
+        <p>确定要删除这个学生吗？</p>
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+          <button @click="closeDeleteModal" style="padding: 8px 16px; background: linear-gradient(135deg, #94a3b8, #64748b); border: none; color: white; border-radius: 4px;">取消</button>
+          <button @click="confirmDelete" style="padding: 8px 16px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; color: white; border-radius: 4px;">确认删除</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -160,7 +172,9 @@ export default {
         collegeId: '',
         roleId: 1,
         majorId: ''
-      }
+      },
+      // 删除确认
+      deleteStudentId: null
     }
   },
   mounted() {
@@ -390,16 +404,36 @@ export default {
         alert('保存学生失败')
       }
     },
-    async deleteStudent(studentId) {
-      if (confirm('确定要删除这个学生吗？')) {
+    showDeleteConfirm(studentId) {
+      this.deleteStudentId = studentId
+      const deleteModal = document.getElementById('deleteModal')
+      if (deleteModal) {
+        deleteModal.style.display = 'flex'
+      }
+    },
+    closeDeleteModal() {
+      const deleteModal = document.getElementById('deleteModal')
+      if (deleteModal) {
+        deleteModal.style.display = 'none'
+      }
+      alert('删除操作已取消')
+    },
+    async confirmDelete() {
+      if (this.deleteStudentId) {
         try {
           // 调用后端 API 删除学生
-          await axios.delete(`/student/delete/${studentId}`)
+          await axios.delete(`/student/delete/${this.deleteStudentId}`)
           await this.loadStudents() // 重新加载学生列表
           alert('删除成功')
         } catch (error) {
           console.error('删除学生失败:', error)
           alert('删除学生失败')
+        } finally {
+          // 关闭模态框
+          const deleteModal = document.getElementById('deleteModal')
+          if (deleteModal) {
+            deleteModal.style.display = 'none'
+          }
         }
       }
     }
