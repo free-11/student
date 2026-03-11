@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    # 必须指定数据库url（核心修复）
+    url: jdbc:mysql://localhost:3306/student_information?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    # 数据库账号
+    username: root
+    # 数据库密码（替换为你的实际密码）
+    password: root
+    # 显式指定驱动类（避免自动检测失败）
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # 其他配置（MyBatis等）保持不变
+mybatis:
+  mapper-locations: classpath:org/example/mapper/*.xml
+  type-aliases-package: org.example.pojo
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+server:
+  port: 8084

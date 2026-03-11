@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="org.example.mapper.StudentMapper">
+
+
+    <insert id="add"
+            parameterType="org.example.pojo.Student"
+            useGeneratedKeys="true"
+            keyProperty="studentId">
+
+        INSERT INTO student (
+            name,
+            phone,
+            age,
+            gender,
+            address_id,
+            college_id,
+            role_id,
+            major_id
+        ) VALUES (
+                     #{name},
+                     #{phone},
+                     #{age},
+                     #{gender},
+                     #{addressId},
+                     #{collegeId},
+                     #{roleId},
+                     #{majorId}
+                 )
+    </insert>
+    <delete id="delete" parameterType="Integer">
+        DELETE FROM student WHERE student_id = #{studentId}
+    </delete>
+    <update id="update" parameterType="org.example.pojo.Student">
+        UPDATE student
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="age != null">age = #{age},</if>
+            <if test="gender != null and gender != ''">gender = #{gender},</if>
+            <if test="addressId != null">address_id = #{addressId},</if>
+            <if test="collegeId != null">college_id = #{collegeId},</if>
+            <if test="roleId != null">role_id = #{roleId},</if>
+            <if test="majorId != null">major_id = #{majorId},</if>
+        </trim>
+        WHERE student_id = #{studentId}
+    </update>
+    <select id="findById" parameterType="Integer" resultType="org.example.pojo.Student">
+        SELECT
+            s.student_id,s.name, s.phone, s.age, s.gender,s.address_id, s.college_id, s.role_id, s.major_id,a.province, a.city, a.district, a.detail,c.college_name, r.role_name, m.major_name
+        FROM student AS s
+                 LEFT JOIN address AS a ON s.address_id = a.address_id
+                 LEFT JOIN college AS c ON s.college_id = c.college_id
+                 LEFT JOIN role AS r ON s.role_id = r.role_id
+                 LEFT JOIN major AS m ON s.major_id = m.major_id
+        WHERE s.student_id = #{studentId};
+    </select>
+
+    <select id="findAll" resultType="org.example.pojo.Student">
+        SELECT
+            -- 补全 student 表的所有核心字段
+            s.student_id,
+            s.`name`,
+            s.phone,
+            s.age,
+            s.gender,
+            s.address_id,   -- 补缺失
+            s.college_id,   -- 补缺失
+            s.role_id,      -- 补缺失
+            s.major_id,     -- 补缺失
+            -- 关联表字段（保留原有，可选加主键）
+            a.address_id,   -- 可选：地址表主键
+            a.province,
+            a.city,
+            a.district,
+            a.detail,
+            c.college_id,   -- 可选：学院表主键
+            c.college_name,
+            r.role_id,      -- 可选：角色表主键
+            r.role_name,
+            m.major_id,     -- 可选：专业表主键
+            m.major_name
+        FROM
+            student AS s
+                LEFT JOIN address AS a ON s.address_id = a.address_id
+                LEFT JOIN college AS c on s.college_id = c.college_id
+                LEFT JOIN role AS r ON s.role_id = r.role_id
+                LEFT JOIN major AS m on s.major_id = m.major_id;
+    </select>
+</mapper>
