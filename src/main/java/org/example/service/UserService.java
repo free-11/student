@@ -6,4 +6,6 @@ public interface UserService {
     SysUser findByUserName(String username);
 
     void register(String username, String password);
+    
+    void updatePassword(String username, String password);
 }

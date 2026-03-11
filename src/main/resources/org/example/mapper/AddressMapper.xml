@@ -8,10 +8,10 @@
             parameterType="org.example.pojo.Address"
             useGeneratedKeys="true"
             keyProperty="addressId">
-        INSERT INTO address (province, city, district, detail)
-        VALUES (#{province}, #{city}, #{district}, #{detail})
+        INSERT INTO address (province, city, detail)
+        VALUES (#{province}, #{city}, #{detail})
     </insert>
     <select id="findAll" resultType="org.example.pojo.Address">
-        SELECT address_id, province, city, district, detail FROM address
+        SELECT address_id, province, city, detail FROM address
     </select>
 </mapper>

@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <header>
+    <header v-if="!isLoginRoute && isLoggedIn">
       <h1>学生信息管理系统</h1>
       <nav>
         <router-link to="/student">学生管理</router-link>
@@ -8,6 +8,7 @@
         <router-link to="/college">学院管理</router-link>
         <router-link to="/major">专业管理</router-link>
         <router-link to="/role">角色管理</router-link>
+        <button @click="logout" style="margin-left: 20px; padding: 8px 16px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; color: white; border-radius: 20px; font-weight: 500; cursor: pointer;">退出登录</button>
       </nav>
     </header>
     <main>
@@ -15,6 +16,26 @@
     </main>
   </div>
 </template>
+
+<script>
+export default {
+  name: 'App',
+  computed: {
+    isLoggedIn() {
+      return localStorage.getItem('token') !== null
+    },
+    isLoginRoute() {
+      return this.$route.path === '/login'
+    }
+  },
+  methods: {
+    logout() {
+      localStorage.removeItem('token')
+      this.$router.push('/login')
+    }
+  }
+}
+</script>
 
 <style>
 /* 全局样式 */
@@ -56,6 +77,7 @@ nav {
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 nav a {
@@ -84,6 +106,6 @@ nav a.router-link-active {
 
 main {
   padding: 0;
-  min-height: calc(100vh - 120px);
+  min-height: 100vh;
 }
 </style>

@@ -1,57 +1,46 @@
 <template>
   <div class="user-view">
-    <h2>用户管理</h2>
+    <h2>个人信息管理</h2>
+    
+    <!-- 个人信息展示 -->
+    <div class="info-card" v-if="userInfo">
+      <h3>账号信息</h3>
+      <div class="info-item">
+        <label>用户名:</label>
+        <span>{{ userInfo.username }}</span>
+      </div>
+      <div class="info-item">
+        <label>密码:</label>
+        <span>{{ userInfo.password }}</span>
+      </div>
+    </div>
+    
+    <!-- 修改密码表单 -->
+    <div class="password-card small-card">
+      <h3>修改密码</h3>
+      <form @submit.prevent="updatePassword">
+        <div class="form-group">
+          <label for="oldPassword">旧密码:</label>
+          <input type="password" id="oldPassword" v-model="passwordForm.oldPassword" required class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="newPassword">新密码:</label>
+          <input type="password" id="newPassword" v-model="passwordForm.newPassword" required class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">确认新密码:</label>
+          <input type="password" id="confirmPassword" v-model="passwordForm.confirmPassword" required class="form-input">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-save">保存修改</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- 操作按钮 -->
     <div class="action-buttons">
-      <button @click="openRegisterModal" class="btn-register">注册用户</button>
-      <button @click="openLoginModal" class="btn-login">用户登录</button>
-    </div>
-    <div id="loginStatus" class="login-status" v-if="loginInfo">
-      <p>当前登录用户: {{ loginInfo.username }}</p>
+      <button @click="loadUserInfo" class="btn-refresh">刷新信息</button>
       <button @click="logout" class="btn-logout">退出登录</button>
-    </div>
-
-    <!-- 注册用户模态框 -->
-    <div v-if="showRegisterModal" class="modal">
-      <div class="modal-content">
-        <span @click="closeRegisterModal" class="close">&times;</span>
-        <h3>注册用户</h3>
-        <form @submit.prevent="register">
-          <div class="form-group">
-            <label>用户名:</label>
-            <input type="text" v-model="registerForm.username" required>
-          </div>
-          <div class="form-group">
-            <label>密码:</label>
-            <input type="password" v-model="registerForm.password" required>
-          </div>
-          <div class="form-actions">
-            <button type="button" @click="closeRegisterModal" class="btn-cancel">取消</button>
-            <button type="submit" class="btn-save">注册</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 登录模态框 -->
-    <div v-if="showLoginModal" class="modal">
-      <div class="modal-content">
-        <span @click="closeLoginModal" class="close">&times;</span>
-        <h3>用户登录</h3>
-        <form @submit.prevent="login">
-          <div class="form-group">
-            <label>用户名:</label>
-            <input type="text" v-model="loginForm.username" required>
-          </div>
-          <div class="form-group">
-            <label>密码:</label>
-            <input type="password" v-model="loginForm.password" required>
-          </div>
-          <div class="form-actions">
-            <button type="button" @click="closeLoginModal" class="btn-cancel">取消</button>
-            <button type="submit" class="btn-save">登录</button>
-          </div>
-        </form>
-      </div>
     </div>
   </div>
 </template>
@@ -63,233 +52,302 @@ export default {
   name: 'UserView',
   data() {
     return {
-      showRegisterModal: false,
-      showLoginModal: false,
-      registerForm: {
-        username: '',
-        password: ''
-      },
-      loginForm: {
-        username: '',
-        password: ''
-      },
-      loginInfo: null
+      userInfo: null,
+      passwordForm: {
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }
     }
   },
   mounted() {
-    // 检查本地存储中是否有登录信息
-    const savedLoginInfo = localStorage.getItem('loginInfo')
-    if (savedLoginInfo) {
-      this.loginInfo = JSON.parse(savedLoginInfo)
-    }
+    this.loadUserInfo()
   },
   methods: {
-    openRegisterModal() {
-      this.showRegisterModal = true
-    },
-    closeRegisterModal() {
-      this.showRegisterModal = false
-      this.registerForm = {
-        username: '',
-        password: ''
-      }
-    },
-    openLoginModal() {
-      this.showLoginModal = true
-    },
-    closeLoginModal() {
-      this.showLoginModal = false
-      this.loginForm = {
-        username: '',
-        password: ''
-      }
-    },
-    async register() {
+    async loadUserInfo() {
       try {
-        const response = await axios.post('/api/user/register', this.registerForm)
-        if (response.data.code === 200) {
-          alert('注册成功')
-          this.closeRegisterModal()
+        const token = localStorage.getItem('token')
+        if (!token) {
+          this.$router.push('/login')
+          return
+        }
+        
+        // 从token中提取用户名
+        const decodedToken = JSON.parse(atob(token.split('.')[1]))
+        const username = decodedToken.claims.username
+        
+        const response = await axios.get(`/user/info?username=${username}`)
+        if (response.data.code === 0) {
+          this.userInfo = response.data.data
         } else {
-          alert(response.data.msg || '注册失败')
+          alert('获取用户信息失败')
         }
       } catch (error) {
-        console.error('注册失败:', error)
-        alert('注册失败')
+        console.error('获取用户信息失败:', error)
+        alert('获取用户信息失败')
       }
     },
-    async login() {
+    async updatePassword() {
       try {
-        const response = await axios.post('/api/user/login', this.loginForm)
-        if (response.data.code === 200) {
-          this.loginInfo = {
-            username: this.loginForm.username,
-            token: response.data.data
+        // 验证新密码和确认密码是否一致
+        if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+          alert('新密码和确认密码不一致')
+          return
+        }
+        
+        // 从token中提取用户名
+        const token = localStorage.getItem('token')
+        const decodedToken = JSON.parse(atob(token.split('.')[1]))
+        const username = decodedToken.claims.username
+        
+        const response = await axios.post('/user/updatePassword', {
+          username: username,
+          oldPassword: this.passwordForm.oldPassword,
+          newPassword: this.passwordForm.newPassword
+        })
+        
+        if (response.data.code === 0) {
+          alert('密码修改成功')
+          // 重置表单
+          this.passwordForm = {
+            oldPassword: '',
+            newPassword: '',
+            confirmPassword: ''
           }
-          localStorage.setItem('loginInfo', JSON.stringify(this.loginInfo))
-          alert('登录成功')
-          this.closeLoginModal()
+          // 重新加载用户信息
+          this.loadUserInfo()
         } else {
-          alert(response.data.msg || '登录失败')
+          alert(response.data.msg || '密码修改失败')
         }
       } catch (error) {
-        console.error('登录失败:', error)
-        alert('登录失败')
+        console.error('密码修改失败:', error)
+        alert('密码修改失败')
       }
     },
     logout() {
-      this.loginInfo = null
-      localStorage.removeItem('loginInfo')
-      alert('已退出登录')
+      localStorage.removeItem('token')
+      this.$router.push('/login')
     }
   }
 }
 </script>
 
 <style scoped>
+/* 主容器 */
 .user-view {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
   padding: 20px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* 标题样式 */
 h2 {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   color: #333;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.action-buttons {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.btn-register, .btn-login, .btn-logout, .btn-cancel, .btn-save {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.btn-register {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.btn-register:hover {
-  background-color: #45a049;
-}
-
-.btn-login {
-  background-color: #2196F3;
-  color: white;
-}
-
-.btn-login:hover {
-  background-color: #0b7dda;
-}
-
-.btn-logout {
-  background-color: #f44336;
-  color: white;
-  margin-left: 10px;
-}
-
-.btn-logout:hover {
-  background-color: #da190b;
-}
-
-.btn-cancel {
-  background-color: #9e9e9e;
-  color: white;
-  margin-right: 10px;
-}
-
-.btn-cancel:hover {
-  background-color: #757575;
-}
-
-.btn-save {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.btn-save:hover {
-  background-color: #45a049;
-}
-
-.login-status {
-  background-color: #e3f2fd;
-  padding: 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.login-status p {
-  margin: 0;
-  color: #1976d2;
-  font-weight: bold;
-}
-
-/* 模态框样式 */
-.modal {
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
+/* 信息卡片 */
+.info-card, .password-card {
   background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+/* 小卡片样式 */
+.small-card {
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
   padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
+/* 卡片标题 */
+h3 {
+  margin-bottom: 20px;
+  color: #334155;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
 }
 
-.close:hover {
-  color: black;
+/* 信息项 */
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.info-item span {
+  font-weight: 500;
+  color: #334155;
+}
+
+/* 表单组 */
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #64748b;
 }
 
-.form-group input {
+/* 表单输入框 */
+.form-input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background-color: #f8fafc;
 }
 
+/* 输入框焦点效果 */
+.form-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  transform: translateY(-1px);
+}
+
+/* 表单操作按钮 */
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* 保存按钮 */
+.btn-save {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  color: white;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+}
+
+/* 按钮悬停效果 */
+.btn-save:hover {
+  background: linear-gradient(135deg, #4338ca, #3730a3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.4);
+}
+
+/* 按钮点击效果 */
+.btn-save:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+}
+
+/* 操作按钮容器 */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
   margin-top: 20px;
+}
+
+/* 刷新按钮 */
+.btn-refresh {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+/* 刷新按钮悬停效果 */
+.btn-refresh:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* 退出登录按钮 */
+.btn-logout {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+/* 退出登录按钮悬停效果 */
+.btn-logout:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .user-view {
+    padding: 15px;
+  }
+  
+  h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .info-card, .password-card {
+    padding: 20px;
+  }
+  
+  h3 {
+    font-size: 16px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn-refresh, .btn-logout, .btn-save {
+    width: 100%;
+    max-width: 200px;
+  }
 }
 </style>

@@ -26,4 +26,10 @@ public class UserServiceImpl implements UserService {
         String encodedPassword = passwordEncoder.encode(password);
         userMapper.add(username, encodedPassword);
     }
+
+    @Override
+    public void updatePassword(String username, String password) {
+        String encodedPassword = passwordEncoder.encode(password);
+        userMapper.updatePassword(username, encodedPassword);
+    }
 }

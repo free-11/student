@@ -21,9 +21,9 @@ public class StudentController {
         studentService.add(student);
         return Result.success();
     }
-    @DeleteMapping("/delete")
-    public Result deleteStudent(@RequestBody Student student){
-        studentService.delete(student.getStudentId());
+    @DeleteMapping("/delete/{studentId}")
+    public Result deleteStudent(@PathVariable Integer studentId){
+        studentService.delete(studentId);
         return Result.success();
     }
 

@@ -76,7 +76,6 @@
             a.address_id,   -- 可选：地址表主键
             a.province,
             a.city,
-            a.district,
             a.detail,
             c.college_id,   -- 可选：学院表主键
             c.college_name,

@@ -32,7 +32,7 @@ public class Student {
     // 以下关联表展示字段保留不变
     private String province;
     private String city;
-    private String district;
+
     private String detail;
     private String collegeName;
     private String roleName;
